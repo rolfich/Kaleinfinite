@@ -1,7 +1,6 @@
 #if defined(VERTEX)
 
 in vec3 VertexPosition;
-uniform int PassIndex;
 
 out vData {
     vec2 uv;
@@ -58,6 +57,7 @@ struct Ray {
     int idxPlaneCollisioned;
 };
 
+// Compute the virtual prism
 Prism createPrism(){
     Prism prism;
 
@@ -163,6 +163,7 @@ float norm(vec3 v){
     return sqrt(v.x*v.x + v.y*v.y + v.z*v.z);
 }
 
+// Returns the collision point between a ray and a given plane
 vec3 computeCollisionPoint(Ray r, Plane p){
 
     float a = r.direction.x * p.n.x + r.direction.y * p.n.y + r.direction.z * p.n.z;
@@ -186,6 +187,7 @@ vec3 computeCollisionPoint(Ray r, Plane p){
     return cp;
 }
 
+// Tests if a point is inside a quad
 bool testAreas(vec3 cp, Plane p) {
     if(abs(triangleArea(p.p2,p.p3,p.p4)-triangleArea(p.p2,p.p4,cp)-triangleArea(p.p2,p.p3,cp)-triangleArea(p.p3,p.p4,cp)) < 0.1 || abs(triangleArea(p.p1,p.p2,p.p3)-triangleArea(p.p1,p.p2,cp)-triangleArea(p.p2,p.p3,cp)-triangleArea(p.p1,p.p3,cp)) < 0.1) {
         return true;
@@ -194,7 +196,7 @@ bool testAreas(vec3 cp, Plane p) {
 }
 
 // Returns reflection of the ray if it has collisionned
-// Returns the ray if not, with a -1 index
+// Returns the ray if not, with a -1 plane index
 Ray rayMirror(Ray r, Plane p1, Plane p2, Plane p3, Plane texturePlane) {
 
     Ray nullRay = r;
@@ -310,14 +312,13 @@ void main(void) {
                 // If one miror has reflected the ray, test it with other mirrors until it touches the bottom or it converges
                 if(r.idxPlaneCollisioned != -1) {
                     r = rayMirror(r, prism.p1, prism.p2, prism.p3, prism.texturePlane);
+                    
                     // 3D coordinates to screen coordinates
                     vec4 wPp = Projection * View * vec4(r.start, 1.0);
                     vec3 Pp = vec3(wPp/wPp.w);
-
                     ivec2 ts = textureSize(FBOTexture, 0);
-                    //int winX = int((Pp.x +1.5)*FBOTextureWidth/3.); 
                     int winY = int( (Pp.y + sqrt(3.)/2.) * ts.x / sqrt(3.));
-                    int winX = int( (Pp.x + sqrt(3.)/2.) * ts.y / sqrt(3.)); // pas normal mais ça marche
+                    int winX = int( (Pp.x + sqrt(3.)/2.) * ts.y / sqrt(3.));
 
                     // Apply its reflection pixel's color
                     Color = vec4(texelFetch(FBOTexture, ivec2(winX, winY), 0).rgb, 1.0);

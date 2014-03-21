@@ -12,7 +12,7 @@ out vData {
 
 void main(void) {
     vec3 position = vec3(VertexPosition.x, CameraPosition.y -7, VertexPosition.z);
-    gl_Position = normalize(Projection * View * vec4(Rotation*position.xyz, 1.0));
+    gl_Position = normalize(Projection * View * vec4(Rotation * position.xyz, 1.0));
     vertex.uv = VertexTexCoord;
 }
 
@@ -32,6 +32,5 @@ void main(void) {
 
     vec3 texture = texture(FBOTexture, frag.uv).rgb;
     Color = vec4(texture, 1.0);
-
 }
 #endif

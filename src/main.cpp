@@ -293,23 +293,26 @@ int main( int argc, char **argv ) {
     float xTexture = -1;
     float zTexture = -1;
 
+    // Bottom plane
     int plane_triangleCount = 2;
     int plane_triangleList[] = {0, 1, 2, 2, 1, 3}; 
     float plane_uvs[] = {0.f, 0.f, 1.f, 0.f, 0.f, 1.f, 1.f, 1.f};
     float plane_vertices[] = {-1.5, -6.0, 1.5, 1.5, -6.0, 1.5, -1.5, -6.0, -1.5, 1.5, -6.0, -1.5};
     float plane_normals[] = {0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0};
 
+    // Final scene plane
     float plane2_vertices[] = {-4, -6.0, 4, 4, -6.0, 4, -4, -6.0, -4, 4, -6.0, -4};
 
+    // Frame buffer quad
     int   quad_triangleCount = 2;
     int   quad_triangleList[] = {0, 1, 2, 2, 1, 3}; 
     float quad_vertices[] =  {-1.0, -1.0, 1.0, -1.0, -1.0, 1.0, 1.0, 1.0};
 
+    // Variables
     int lastPass = 0;
     bool passNumber[7] = {false, false, false, false, false, false, false};
     int indexTextureToWrite = 0;
     int rayBufferTexture = 0;
-
     int changeTexture = false;
 
     // ################################################################################
@@ -547,6 +550,7 @@ int main( int argc, char **argv ) {
 
         // Variables for the demo
 
+        int aPressed = glfwGetKey(GLFW_KEY_A);
         int rPressed = glfwGetKey(GLFW_KEY_R);
         int tPressed = glfwGetKey(GLFW_KEY_T);
         int yPressed = glfwGetKey(GLFW_KEY_Y);
@@ -558,13 +562,32 @@ int main( int argc, char **argv ) {
         }
 
         if(yPressed == GLFW_PRESS) {
-            changeTexture = true;
+            if(changeTexture) changeTexture = false;
+            else changeTexture = true;
+        }
+
+        // Reset the textured quad coordinates
+        if(aPressed == GLFW_PRESS) {
+
+            plane_vertices[0] = -1.5;
+            plane_vertices[2] = 1.5;
+            plane_vertices[3] = 1.5;
+            plane_vertices[5] = 1.5;
+            plane_vertices[6] = -1.5;
+            plane_vertices[8] = -1.5;
+            plane_vertices[9] = 1.5;
+            plane_vertices[11] = -1.5;
+
+            glBindVertexArray(vao[1]);
+            glBindBuffer(GL_ARRAY_BUFFER, vbo[4]);
+            glEnableVertexAttribArray(0);
+            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GL_FLOAT)*3, (void*)0);
+            glBufferData(GL_ARRAY_BUFFER, sizeof(plane_vertices), plane_vertices, GL_STATIC_DRAW);
         }
 
         updatePasses(passNumber, indexTextureToWrite, lastPass, camera);
-        
 
-        // Get camera matrices
+        // Get matrices
         glm::mat4 projection = glm::perspective(45.0f, widthf / heightf, 0.1f, 100.f); 
         glm::mat4 worldToView = glm::lookAt(camera.eye, camera.o, camera.up);
         glm::mat4 worldToScreen = projection * worldToView;
@@ -815,17 +838,14 @@ int main( int argc, char **argv ) {
 
 void execRaytracing(GLuint program, GLuint rayBufferFbo, GLuint rayTexture1, GLuint rayTexture2, int passIndex, int texIndex, GLuint* fboTextures, GLuint vao, int quad_triangleCount, int lastPass){
 
-
-    //if(passIndex < lastPass+1) {
-        glBindFramebuffer(GL_FRAMEBUFFER, rayBufferFbo); 
-        // On attache la texture 0 pour dessiner dedans
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 , GL_TEXTURE_2D, rayTexture1, 0);
-        if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-        {
-            fprintf(stderr, "Error on building framebuffer\n");
-            exit( EXIT_FAILURE );
-        }
-    //}
+    glBindFramebuffer(GL_FRAMEBUFFER, rayBufferFbo); 
+    // On attache la texture 0 pour dessiner dedans
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 , GL_TEXTURE_2D, rayTexture1, 0);
+    if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+    {
+        fprintf(stderr, "Error on building framebuffer\n");
+        exit( EXIT_FAILURE );
+    }
 
     glUseProgram(program);
     glUniform1i(glGetUniformLocation(program, "PassIndex"), passIndex);
@@ -1123,7 +1143,7 @@ void camera_defaults(Camera & c) {
 
 void camera_zoom(Camera & c, float factor) {
     c.radius += factor * c.radius ;
-    if(c.radius >= 92.) c.radius = 92.;
+    if(c.radius >= 80.) c.radius = 80.;
     if (c.radius < 0.2) {
         c.radius = 0.2f;
         c.o = c.eye + glm::normalize(c.o - c.eye) * c.radius;
